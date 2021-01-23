@@ -8,10 +8,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 
-public class ImageLoader implements Serializable {
+public class ImageLoader {
 
   private BufferedImage bufferedImage;
-  private int[][] grayscale;
   private RGBA[][] originalColor;
   private String imageOriginalExtension;
 
@@ -40,56 +39,8 @@ public class ImageLoader implements Serializable {
     return originalColor;
   }
 
-  private int[][] getLightningGrayscale() {
-    final int ligne = bufferedImage.getWidth(), colonne = bufferedImage.getHeight();
-    RGBA[][] originale = this.getOriginalColor();
-    this.grayscale = new int[ligne][colonne];
-    for (int x = 0; x < ligne; x++) {
-      for (int y = 0; y < colonne; y++) {
-        this.grayscale[x][y] = ((originale[x][y].max() + originale[x][y].min()) / 2);
-      }
-    }
-    return this.grayscale;
-  }
-
-  private int[][] getAverageGayscale() {
-    final int ligne = bufferedImage.getWidth(), colonne = bufferedImage.getHeight();
-    RGBA[][] originale = this.getOriginalColor();
-    this.grayscale = new int[ligne][colonne];
-    for (int x = 0; x < ligne; x++) {
-      for (int y = 0; y < colonne; y++) {
-        this.grayscale[x][y] = (int) ((float) (originale[x][y].getRed() + originale[x][y].getGreen() + originale[x][y].getBlue()) / (float) 3);
-      }
-    }
-    return this.grayscale;
-  }
-
-  private int[][] getLuninanceGrayscale() {
-    final int ligne = bufferedImage.getWidth(), colonne = bufferedImage.getHeight();
-    RGBA[][] originale = this.getOriginalColor();
-    this.grayscale = new int[ligne][colonne];
-    for (int x = 0; x < ligne; x++) {
-      for (int y = 0; y < colonne; y++) {
-        this.grayscale[x][y] = (int) (0.21 * originale[x][y].getRed() + 0.72 * originale[x][y].getGreen() + 0.07 * originale[x][y].getBlue());
-      }
-    }
-    return this.grayscale;
-  }
-
-  public BufferedImage getBufferedImage() throws IOException {
-    return bufferedImage;
-  }
-
-  public int[][] getGrayscale() {
-    return this.getAverageGayscale();
-  }
-
   public void setOriginalColor(RGBA[][] image) {
     this.originalColor = image;
-  }
-
-  public void setGrayScale(int[][] grayscale) {
-    this.grayscale = grayscale;
   }
   
   public String getImageOriginalExtension() {

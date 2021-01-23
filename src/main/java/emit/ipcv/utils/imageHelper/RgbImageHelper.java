@@ -114,4 +114,40 @@ public class RgbImageHelper {
 		}
 		return this;
 	}
+	private int[][] getLightningGrayscale() {
+		final int lineLength = lineLength(), columnLength = columnLength();
+		int[][] grayscale = new int[lineLength][columnLength];
+		for (int x = 0; x < lineLength; x++) {
+			for (int y = 0; y < columnLength; y++) {
+				grayscale[x][y] = ((image[x][y].max() + image[x][y].min()) / 2);
+			}
+		}
+		return grayscale;
+	}
+	
+	private int[][] getAverageGayscale() {
+		final int lineLength = lineLength(), columnLength = columnLength();
+		int[][] grayscale = new int[lineLength][columnLength];
+		for (int x = 0; x < lineLength; x++) {
+			for (int y = 0; y < columnLength; y++) {
+				grayscale[x][y] = (int) ((float) (image[x][y].getRed() + image[x][y].getGreen() + image[x][y].getBlue()) / (float) 3);
+			}
+		}
+		return grayscale;
+	}
+	
+	private int[][] getLuninanceGrayscale() {
+		final int lineLength = lineLength(), columnLength = columnLength();
+		int[][] grayscale = new int[lineLength][columnLength];
+		for (int line = 0; line < lineLength; line++) {
+			for (int column = 0; column < columnLength; column++) {
+				grayscale[line][column] = (int) (0.21 * image[line][column].getRed() + 0.72 * image[line][column].getGreen() + 0.07 * image[line][column].getBlue());
+			}
+		}
+		return grayscale;
+	}
+	
+	public int[][] getGrayscale() {
+		return this.getAverageGayscale();
+	}
 }

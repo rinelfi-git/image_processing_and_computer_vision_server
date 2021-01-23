@@ -169,151 +169,35 @@ public class ConnectedClient implements Runnable {
 	}
 	
 	private void papertTurtleOperation(DataPacket dataPacket) throws IOException {
-		final ImageLoader imageLoader = (ImageLoader) dataPacket.getData();
-		PapertTurtle papertTurtle = new PapertTurtle(imageLoader.getGrayscale());
-		int[][] newGrayscale = papertTurtle.execute();
-		
-		RgbImageHelper rgbImageHelper = new RgbImageHelper(imageLoader.getOriginalColor());
-		RGBA[][] fullColorImage = new RgbImageHelper(newGrayscale).setAlphas(rgbImageHelper.getAlphas()).getImage();
-		send(new DataPacket().setHeader(Const.PAPERT_TURTLE).setData(fullColorImage));
+	
 	}
 	
 	private void topHatClosureOperation(DataPacket dataPacket) throws IOException {
-		final Map<String, Object> inputData = (HashMap) dataPacket.getData();
-		ImageLoader imageLoader = (ImageLoader) inputData.get("image-loader");
-		Object[] values = (Object[]) inputData.get("values");
-		
-		int x = (int) values[0];
-		int y = (int) values[1];
-		int[][] structuringElement = (int[][]) values[2];
-		int[][] binaryGrayscale = new ThresholdingBinarization(imageLoader.getGrayscale(), new Otsu(imageLoader.getGrayscale()).execute()).execute();
-		int[][] closingGrayscale = new Erosion(structuringElement, x, y, new Dilation(structuringElement, x, y, binaryGrayscale).execute()).execute();
-		GrayscaleImageHelper openingGrayscaleHelper = new GrayscaleImageHelper(closingGrayscale);
-		int[][] newGrayscale = new int[openingGrayscaleHelper.lineLength()][openingGrayscaleHelper.columnLength()];
-		
-		for (int line = 0; line < openingGrayscaleHelper.lineLength(); line++) {
-			for (int column = 0; column < openingGrayscaleHelper.columnLength(); column++) {
-				newGrayscale[line][column] = Math.abs(closingGrayscale[line][column] - binaryGrayscale[line][column]);
-			}
-		}
-		newGrayscale = new InvertGrayscale(newGrayscale).execute();
-		
-		RgbImageHelper rgbImageHelper = new RgbImageHelper(imageLoader.getOriginalColor());
-		RGBA[][] fullColorImage = new RgbImageHelper(newGrayscale).setAlphas(rgbImageHelper.getAlphas()).getImage();
-		send(new DataPacket().setHeader(Const.TOP_HAT_CLOSURE).setData(fullColorImage));
+	
 	}
 	
 	private void topHatOpeningOperation(DataPacket dataPacket) throws IOException {
-		final Map<String, Object> inputData = (HashMap) dataPacket.getData();
-		ImageLoader imageLoader = (ImageLoader) inputData.get("image-loader");
-		Object[] values = (Object[]) inputData.get("values");
-		
-		int x = (int) values[0];
-		int y = (int) values[1];
-		int[][] structuringElement = (int[][]) values[2];
-		int[][] binaryGrayscale = new ThresholdingBinarization(imageLoader.getGrayscale(), new Otsu(imageLoader.getGrayscale()).execute()).execute();
-		int[][] openingGrayscale = new Dilation(structuringElement, x, y, new Erosion(structuringElement, x, y, binaryGrayscale).execute()).execute();
-		GrayscaleImageHelper openingGrayscaleHelper = new GrayscaleImageHelper(openingGrayscale);
-		int[][] newGrayscale = new int[openingGrayscaleHelper.lineLength()][openingGrayscaleHelper.columnLength()];
-		
-		for (int line = 0; line < openingGrayscaleHelper.lineLength(); line++) {
-			for (int column = 0; column < openingGrayscaleHelper.columnLength(); column++) {
-				newGrayscale[line][column] = Math.abs(binaryGrayscale[line][column] - openingGrayscale[line][column]);
-			}
-		}
-		newGrayscale = new InvertGrayscale(newGrayscale).execute();
-		
-		RgbImageHelper rgbImageHelper = new RgbImageHelper(imageLoader.getOriginalColor());
-		RGBA[][] fullColorImage = new RgbImageHelper(newGrayscale).setAlphas(rgbImageHelper.getAlphas()).getImage();
-		send(new DataPacket().setHeader(Const.TOP_HAT_OPENING).setData(fullColorImage));
+	
 	}
 	
 	private void thickeningOperation(DataPacket dataPacket) throws IOException {
-		final Map<String, Object> inputData = (HashMap) dataPacket.getData();
-		ImageLoader imageLoader = (ImageLoader) inputData.get("image-loader");
-		Object[] values = (Object[]) inputData.get("values");
-		
-		int x = (int) values[0];
-		int y = (int) values[1];
-		int[][] structuringElement = (int[][]) values[2];
-		int[][] binaryGrayscale = new ThresholdingBinarization(imageLoader.getGrayscale(), new Otsu(imageLoader.getGrayscale()).execute()).execute();
-		int[][] openingGrayscale = new Dilation(structuringElement, x, y, new Erosion(structuringElement, x, y, binaryGrayscale).execute()).execute();
-		GrayscaleImageHelper openingGrayscaleHelper = new GrayscaleImageHelper(openingGrayscale);
-		int[][] newGrayscale = new int[openingGrayscaleHelper.lineLength()][openingGrayscaleHelper.columnLength()];
-		
-		for (int line = 0; line < openingGrayscaleHelper.lineLength(); line++) {
-			for (int column = 0; column < openingGrayscaleHelper.columnLength(); column++) {
-				newGrayscale[line][column] = Math.abs(binaryGrayscale[line][column] - openingGrayscale[line][column]);
-			}
-		}
-		newGrayscale = new InvertGrayscale(newGrayscale).execute();
-		
-		RgbImageHelper rgbImageHelper = new RgbImageHelper(imageLoader.getOriginalColor());
-		RGBA[][] fullColorImage = new RgbImageHelper(newGrayscale).setAlphas(rgbImageHelper.getAlphas()).getImage();
-		send(new DataPacket().setHeader(Const.THICKENING).setData(fullColorImage));
+	
 	}
 	
 	private void allOrNothingOperation(DataPacket dataPacket) throws IOException {
-		final Map<String, Object> inputData = (HashMap) dataPacket.getData();
-		ImageLoader imageLoader = (ImageLoader) inputData.get("image-loader");
-		
-		int[][] structuringElement = (int[][]) inputData.get("values");
-		Operations operation = new AllOrNothing(structuringElement, imageLoader.getGrayscale());
-		int[][] newGrayscale = operation.execute();
-		RGBA[][] fullColorImage = new RgbImageHelper(newGrayscale).getImage();
-		
-		send(new DataPacket().setHeader(Const.ALL_OR_NOTHING).setData(fullColorImage));
+	
 	}
 	
 	private void openingOperation(DataPacket dataPacket) throws IOException {
-		final Map<String, Object> inputData = (HashMap) dataPacket.getData();
-		ImageLoader imageLoader = (ImageLoader) inputData.get("image-loader");
-		Object[] values = (Object[]) inputData.get("values");
-		
-		Operations erosion, dilation;
-		int x = (int) values[0];
-		int y = (int) values[1];
-		int[][] structuringElement = (int[][]) values[2];
-		erosion = new Erosion(structuringElement, x, y, imageLoader.getGrayscale());
-		int[][] operationErosion = erosion.execute();
-		dilation = new Dilation(structuringElement, x, y, operationErosion);
-		int[][] newGrayscale = dilation.execute();
-		
-		RgbImageHelper rgbImageHelper = new RgbImageHelper(imageLoader.getOriginalColor());
-		RGBA[][] fullColorImage = new RgbImageHelper(newGrayscale).setAlphas(rgbImageHelper.getAlphas()).getImage();
-		send(new DataPacket().setHeader(Const.OPENING).setData(fullColorImage));
+	
 	}
 	
 	private void dilationOperation(DataPacket dataPacket) throws IOException {
-		final Map<String, Object> inputData = (HashMap) dataPacket.getData();
-		ImageLoader imageLoader = (ImageLoader) inputData.get("image-loader");
-		Object[] values = (Object[]) inputData.get("values");
-		
-		int x = (int) values[0];
-		int y = (int) values[1];
-		int[][] structuringElement = (int[][]) values[2];
-		Operations operation = new Dilation(structuringElement, x, y, imageLoader.getGrayscale());
-		int[][] newGrayscale = operation.execute();
-		
-		RgbImageHelper rgbImageHelper = new RgbImageHelper(imageLoader.getOriginalColor());
-		RGBA[][] fullColorImage = new RgbImageHelper(newGrayscale).setAlphas(rgbImageHelper.getAlphas()).getImage();
-		send(new DataPacket().setHeader(Const.DILATION).setData(fullColorImage));
+	
 	}
 	
 	private void erosionOperation(DataPacket dataPacket) throws IOException {
-		final Map<String, Object> inputData = (HashMap) dataPacket.getData();
-		ImageLoader imageLoader = (ImageLoader) inputData.get("image-loader");
-		Object[] values = (Object[]) inputData.get("values");
-		
-		int x = (int) values[0];
-		int y = (int) values[1];
-		int[][] structuringElement = (int[][]) values[2];
-		Operations operation = new Erosion(structuringElement, x, y, imageLoader.getGrayscale());
-		int[][] newGrayscale = operation.execute();
-		
-		RgbImageHelper rgbImageHelper = new RgbImageHelper(imageLoader.getOriginalColor());
-		RGBA[][] fullColorImage = new RgbImageHelper(newGrayscale).setAlphas(rgbImageHelper.getAlphas()).getImage();
-		send(new DataPacket().setHeader(Const.EROSION).setData(fullColorImage));
+	
 	}
 	
 	private void averageFilterOperatin(DataPacket dataPacket) throws IOException {
@@ -512,14 +396,16 @@ public class ConnectedClient implements Runnable {
 	
 	private void binarizationOperation(DataPacket dataPacket) throws IOException {
 		final Map<String, Object> inputData = (HashMap) dataPacket.getData();
-		ImageLoader imageLoader = (ImageLoader) inputData.get("image-loader");
-		ThresholdingBinarization transformation;
-		
-		if(inputData.containsKey("threshold")) transformation = new ThresholdingBinarization(imageLoader.getGrayscale(), (int) inputData.get("threshold"));
-		else transformation = new ThresholdingBinarization(imageLoader.getGrayscale(), new Otsu(imageLoader.getGrayscale()).execute());
-		
-		RgbImageHelper rgbImageHelper = new RgbImageHelper(imageLoader.getOriginalColor());
-		RGBA[][] fullColorImage = new RgbImageHelper(transformation.execute()).setAlphas(rgbImageHelper.getAlphas()).getImage();
+		final RGBA[][] image = (RGBA[][]) inputData.get("image");
+		final int[][] grayscale = new RgbImageHelper(image).getGrayscale();
+		final RgbImageHelper rgbImageHelper = new RgbImageHelper(image);
+		ThresholdingBinarization operation;
+		if(inputData.containsKey("threshold")) operation = new ThresholdingBinarization(grayscale, (int)inputData.get("threshold"));
+		else {
+			Otsu otsu = new Otsu(grayscale);
+			operation = new ThresholdingBinarization(grayscale, otsu.execute());
+		}
+		RGBA[][] fullColorImage = new RgbImageHelper(operation.execute()).setAlphas(rgbImageHelper.getAlphas()).getImage();
 		send(new DataPacket().setHeader(Const.BINARIZATION).setData(fullColorImage));
 	}
 	
@@ -596,7 +482,7 @@ public class ConnectedClient implements Runnable {
 	
 	private void rotationOperation(DataPacket dataPacket) throws IOException {
 		final Map<String, Object> data = (HashMap)dataPacket.getData();
-		float angle = (float) data.get("angle");
+		float angle = (int) data.get("angle");
 		RGBA[][] image = (RGBA[][]) data.get("image");
 		RgbImageHelper rgbImageHelper = new RgbImageHelper(image);
 		int[][] alphaOperation = new Rotation2D(rgbImageHelper.getAlphas(), angle).execute(),
