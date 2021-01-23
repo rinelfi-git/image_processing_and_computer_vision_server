@@ -184,10 +184,10 @@ public class ConnectedClient implements Runnable {
 		int[][] structuringElement = (int[][]) inputData.get("structuring-element");
 		RGBA[][] image = (RGBA[][]) inputData.get("image");
 		Operations operation = new AllOrNothing(structuringElement, new RgbImageHelper(image).getGrayscale());
-		int[][] dilation = operation.execute();
+		int[][] allOrNothing = operation.execute();
 		
 		RgbImageHelper rgbImageHelper = new RgbImageHelper(image);
-		RGBA[][] fullColorImage = new RgbImageHelper(dilation).setAlphas(rgbImageHelper.getAlphas()).getImage();
+		RGBA[][] fullColorImage = new RgbImageHelper(allOrNothing).setAlphas(rgbImageHelper.getAlphas()).getImage();
 		send(new DataPacket().setHeader(Const.DILATION).setData(fullColorImage));
 	}
 	
