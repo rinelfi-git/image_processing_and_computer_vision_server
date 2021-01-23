@@ -197,7 +197,17 @@ public class ConnectedClient implements Runnable {
 	}
 	
 	private void erosionOperation(DataPacket dataPacket) throws IOException {
-	
+		final Map<String, Object> inputData = (HashMap) dataPacket.getData();
+		int x = (int) inputData.get("x");
+		int y = (int) inputData.get("y");
+		int[][] structuringElement = (int[][]) inputData.get("structuring-element");
+		RGBA[][] image = (RGBA[][]) inputData.get("image");
+		Operations operation = new Erosion(structuringElement, x, y, new RgbImageHelper(image).getGrayscale());
+		int[][] erosion = operation.execute();
+		
+		RgbImageHelper rgbImageHelper = new RgbImageHelper(image);
+		RGBA[][] fullColorImage = new RgbImageHelper(erosion).setAlphas(rgbImageHelper.getAlphas()).getImage();
+		send(new DataPacket().setHeader(Const.EROSION).setData(fullColorImage));
 	}
 	
 	private void averageFilterOperatin(DataPacket dataPacket) throws IOException {
