@@ -7,6 +7,7 @@ package emit.ipcv.manager;
 
 import com.sun.corba.se.spi.orb.Operation;
 import emit.ipcv.dataFormat.DataPacket;
+import emit.ipcv.engines.formRecognition.PapertTurtle;
 import emit.ipcv.engines.interfaces.Operations;
 import emit.ipcv.engines.localProcessing.linear.GaussianFilter;
 import emit.ipcv.engines.localProcessing.linear.MiddleFilter;
@@ -165,7 +166,14 @@ public class ConnectedClient implements Runnable {
 	}
 	
 	private void papertTurtleOperation(DataPacket dataPacket) throws IOException {
-	
+		final RGBA[][] image = (RGBA[][]) dataPacket.getData();
+		RgbImageHelper rgbImageHelper = new RgbImageHelper(image);
+		
+		PapertTurtle papertTurtle = new PapertTurtle(rgbImageHelper.getGrayscale());
+		int[][] newGrayscale = papertTurtle.execute();
+		
+		RGBA[][] fullColorImage = new RgbImageHelper(newGrayscale).setAlphas(rgbImageHelper.getAlphas()).getImage();
+		send(new DataPacket().setHeader(Const.TOP_HAT_OPENING).setData(fullColorImage));
 	}
 	
 	private void topHatClosureOperation(DataPacket dataPacket) throws IOException {
@@ -217,7 +225,25 @@ public class ConnectedClient implements Runnable {
 	}
 	
 	private void thickeningOperation(DataPacket dataPacket) throws IOException {
-	
+		final Map<String, Object> inputData = (HashMap) dataPacket.getData();
+		int[][] structuringElement = (int[][]) inputData.get("structuring-element");
+		RGBA[][] image = (RGBA[][]) inputData.get("image");
+		RgbImageHelper rgbImageHelper = new RgbImageHelper(image);
+		
+		int[][] binaryGrayscale = new ThresholdingBinarization(rgbImageHelper.getGrayscale(), new Otsu(rgbImageHelper.getGrayscale()).execute()).execute();
+		int[][] allOrNothingGrayscale = new AllOrNothing(structuringElement, rgbImageHelper.getGrayscale()).execute();
+		GrayscaleImageHelper grayscaleHelper = new GrayscaleImageHelper(binaryGrayscale);
+		int[][] newGrayscale = new int[grayscaleHelper.lineLength()][grayscaleHelper.columnLength()];
+		
+		for (int line = 0; line < grayscaleHelper.lineLength(); line++) {
+			for (int column = 0; column < grayscaleHelper.columnLength(); column++) {
+				newGrayscale[line][column] = Math.abs(binaryGrayscale[line][column] - allOrNothingGrayscale[line][column]);
+			}
+		}
+		newGrayscale = new InvertGrayscale(newGrayscale).execute();
+		
+		RGBA[][] fullColorImage = new RgbImageHelper(newGrayscale).setAlphas(rgbImageHelper.getAlphas()).getImage();
+		send(new DataPacket().setHeader(Const.THICKENING).setData(fullColorImage));
 	}
 	
 	private void allOrNothingOperation(DataPacket dataPacket) throws IOException {
