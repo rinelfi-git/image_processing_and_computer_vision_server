@@ -13,7 +13,9 @@ import emit.ipcv.manager.Server;
  */
 public class Launcher {
   public static void main(String[] args) {
-    Thread t = new Thread(new Server(2046));
+    Thread t;
+    if(args.length > 0) t = new Thread(new Server(Integer.valueOf(args[0])));
+    else t = new Thread(new Server(2046));
     t.start();
   }
 }
