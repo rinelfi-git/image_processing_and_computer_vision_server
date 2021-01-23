@@ -5,8 +5,8 @@
  */
 package emit.ipcv.manager;
 
+import com.sun.corba.se.spi.orb.Operation;
 import emit.ipcv.dataFormat.DataPacket;
-import emit.ipcv.engines.formRecognition.PapertTurtle;
 import emit.ipcv.engines.interfaces.Operations;
 import emit.ipcv.engines.localProcessing.linear.GaussianFilter;
 import emit.ipcv.engines.localProcessing.linear.MiddleFilter;
@@ -23,21 +23,16 @@ import emit.ipcv.engines.pointProcessing.InvertGrayscale;
 import emit.ipcv.engines.pointProcessing.ThresholdingBinarization;
 import emit.ipcv.engines.transformation2D.*;
 import emit.ipcv.utils.Const;
-import emit.ipcv.utils.ImageLoader;
 import emit.ipcv.utils.colors.RGBA;
-import emit.ipcv.utils.imageHelper.GrayscaleImageHelper;
 import emit.ipcv.utils.imageHelper.RgbImageHelper;
 import emit.ipcv.utils.thresholding.Otsu;
-import org.json.JSONException;
 
-import java.awt.*;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -154,7 +149,7 @@ public class ConnectedClient implements Runnable {
 					papertTurtleOperation(dataPacket);
 					break;
 			}
-		} catch (IOException | ClassNotFoundException | JSONException ex) {
+		} catch (IOException | ClassNotFoundException ex) {
 			Logger.getLogger(ConnectedClient.class.getName()).log(Level.SEVERE, null, ex);
 		} finally {
 			try {
@@ -185,15 +180,46 @@ public class ConnectedClient implements Runnable {
 	}
 	
 	private void allOrNothingOperation(DataPacket dataPacket) throws IOException {
-	
+		final Map<String, Object> inputData = (HashMap) dataPacket.getData();
+		int[][] structuringElement = (int[][]) inputData.get("structuring-element");
+		RGBA[][] image = (RGBA[][]) inputData.get("image");
+		Operations operation = new AllOrNothing(structuringElement, new RgbImageHelper(image).getGrayscale());
+		int[][] dilation = operation.execute();
+		
+		RgbImageHelper rgbImageHelper = new RgbImageHelper(image);
+		RGBA[][] fullColorImage = new RgbImageHelper(dilation).setAlphas(rgbImageHelper.getAlphas()).getImage();
+		send(new DataPacket().setHeader(Const.DILATION).setData(fullColorImage));
 	}
 	
 	private void openingOperation(DataPacket dataPacket) throws IOException {
-	
+		final Map<String, Object> inputData = (HashMap) dataPacket.getData();
+		int x = (int) inputData.get("x");
+		int y = (int) inputData.get("y");
+		int[][] structuringElement = (int[][]) inputData.get("structuring-element");
+		RGBA[][] image = (RGBA[][]) inputData.get("image");
+		
+		Operations erosion = new Erosion(structuringElement, x, y, new RgbImageHelper(image).getGrayscale());
+		int[][] erosionOperation = erosion.execute();
+		Operations dilation = new Dilation(structuringElement, x, y, erosionOperation);
+		int[][] newGrayscale = dilation.execute();
+		
+		RgbImageHelper rgbImageHelper = new RgbImageHelper(image);
+		RGBA[][] fullColorImage = new RgbImageHelper(newGrayscale).setAlphas(rgbImageHelper.getAlphas()).getImage();
+		send(new DataPacket().setHeader(Const.DILATION).setData(fullColorImage));
 	}
 	
 	private void dilationOperation(DataPacket dataPacket) throws IOException {
-	
+		final Map<String, Object> inputData = (HashMap) dataPacket.getData();
+		int x = (int) inputData.get("x");
+		int y = (int) inputData.get("y");
+		int[][] structuringElement = (int[][]) inputData.get("structuring-element");
+		RGBA[][] image = (RGBA[][]) inputData.get("image");
+		Operations operation = new Dilation(structuringElement, x, y, new RgbImageHelper(image).getGrayscale());
+		int[][] dilation = operation.execute();
+		
+		RgbImageHelper rgbImageHelper = new RgbImageHelper(image);
+		RGBA[][] fullColorImage = new RgbImageHelper(dilation).setAlphas(rgbImageHelper.getAlphas()).getImage();
+		send(new DataPacket().setHeader(Const.DILATION).setData(fullColorImage));
 	}
 	
 	private void erosionOperation(DataPacket dataPacket) throws IOException {
@@ -355,7 +381,7 @@ public class ConnectedClient implements Runnable {
 	}
 	
 	private void dynamicDisplayOperation(DataPacket dataPacket) throws IOException {
-		final Map<String, Object> inputData = (HashMap)dataPacket.getData();
+		final Map<String, Object> inputData = (HashMap) dataPacket.getData();
 		final RGBA[][] image = (RGBA[][]) inputData.get("image");
 		final int[] minMax = (int[]) inputData.get("min-max");
 		RgbImageHelper rgbImageHelper = new RgbImageHelper(image);
@@ -410,7 +436,7 @@ public class ConnectedClient implements Runnable {
 		final int[][] grayscale = new RgbImageHelper(image).getGrayscale();
 		final RgbImageHelper rgbImageHelper = new RgbImageHelper(image);
 		ThresholdingBinarization operation;
-		if(inputData.containsKey("threshold")) operation = new ThresholdingBinarization(grayscale, (int)inputData.get("threshold"));
+		if (inputData.containsKey("threshold")) operation = new ThresholdingBinarization(grayscale, (int) inputData.get("threshold"));
 		else {
 			Otsu otsu = new Otsu(grayscale);
 			operation = new ThresholdingBinarization(grayscale, otsu.execute());
@@ -464,7 +490,7 @@ public class ConnectedClient implements Runnable {
 		send(new DataPacket().setHeader(Const.VERTICAL_SYMMETRY).setData(fullColorImage));
 	}
 	
-	private void shearOperation(DataPacket dataPacket) throws IOException, JSONException {
+	private void shearOperation(DataPacket dataPacket) throws IOException {
 		final Map<String, Object> data = (HashMap) dataPacket.getData();
 		float[] constants = (float[]) data.get("constants");
 		RGBA[][] image = (RGBA[][]) data.get("image");
@@ -478,7 +504,7 @@ public class ConnectedClient implements Runnable {
 	}
 	
 	private void homothetyOperation(DataPacket dataPacket) throws IOException {
-		final Map<String, Object> data = (HashMap)dataPacket.getData();
+		final Map<String, Object> data = (HashMap) dataPacket.getData();
 		float[] constants = (float[]) data.get("constants");
 		RGBA[][] image = (RGBA[][]) data.get("image");
 		RgbImageHelper rgbImageHelper = new RgbImageHelper(image);
@@ -491,7 +517,7 @@ public class ConnectedClient implements Runnable {
 	}
 	
 	private void rotationOperation(DataPacket dataPacket) throws IOException {
-		final Map<String, Object> data = (HashMap)dataPacket.getData();
+		final Map<String, Object> data = (HashMap) dataPacket.getData();
 		float angle = (int) data.get("angle");
 		RGBA[][] image = (RGBA[][]) data.get("image");
 		RgbImageHelper rgbImageHelper = new RgbImageHelper(image);
