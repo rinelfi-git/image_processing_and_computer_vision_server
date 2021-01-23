@@ -24,6 +24,7 @@ import emit.ipcv.engines.pointProcessing.ThresholdingBinarization;
 import emit.ipcv.engines.transformation2D.*;
 import emit.ipcv.utils.Const;
 import emit.ipcv.utils.colors.RGBA;
+import emit.ipcv.utils.imageHelper.GrayscaleImageHelper;
 import emit.ipcv.utils.imageHelper.RgbImageHelper;
 import emit.ipcv.utils.thresholding.Otsu;
 
@@ -172,7 +173,27 @@ public class ConnectedClient implements Runnable {
 	}
 	
 	private void topHatOpeningOperation(DataPacket dataPacket) throws IOException {
-	
+		final Map<String, Object> inputData = (HashMap) dataPacket.getData();
+		int x = (int) inputData.get("x");
+		int y = (int) inputData.get("y");
+		int[][] structuringElement = (int[][]) inputData.get("structuring-element");
+		RGBA[][] image = (RGBA[][]) inputData.get("image");
+		RgbImageHelper rgbImageHelper = new RgbImageHelper(image);
+		
+		int[][] binaryGrayscale = new ThresholdingBinarization(rgbImageHelper.getGrayscale(), new Otsu(rgbImageHelper.getGrayscale()).execute()).execute();
+		int[][] openingGrayscale = new Dilation(structuringElement, x, y, new Erosion(structuringElement, x, y, binaryGrayscale).execute()).execute();
+		GrayscaleImageHelper openingGrayscaleHelper = new GrayscaleImageHelper(openingGrayscale);
+		int[][] newGrayscale = new int[openingGrayscaleHelper.lineLength()][openingGrayscaleHelper.columnLength()];
+		
+		for (int line = 0; line < openingGrayscaleHelper.lineLength(); line++) {
+			for (int column = 0; column < openingGrayscaleHelper.columnLength(); column++) {
+				newGrayscale[line][column] = Math.abs(binaryGrayscale[line][column] - openingGrayscale[line][column]);
+			}
+		}
+		newGrayscale = new InvertGrayscale(newGrayscale).execute();
+		
+		RGBA[][] fullColorImage = new RgbImageHelper(newGrayscale).setAlphas(rgbImageHelper.getAlphas()).getImage();
+		send(new DataPacket().setHeader(Const.TOP_HAT_OPENING).setData(fullColorImage));
 	}
 	
 	private void thickeningOperation(DataPacket dataPacket) throws IOException {
