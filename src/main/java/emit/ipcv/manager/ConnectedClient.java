@@ -169,7 +169,27 @@ public class ConnectedClient implements Runnable {
 	}
 	
 	private void topHatClosureOperation(DataPacket dataPacket) throws IOException {
-	
+		final Map<String, Object> inputData = (HashMap) dataPacket.getData();
+		int x = (int) inputData.get("x");
+		int y = (int) inputData.get("y");
+		int[][] structuringElement = (int[][]) inputData.get("structuring-element");
+		RGBA[][] image = (RGBA[][]) inputData.get("image");
+		RgbImageHelper rgbImageHelper = new RgbImageHelper(image);
+		
+		int[][] binaryGrayscale = new ThresholdingBinarization(rgbImageHelper.getGrayscale(), new Otsu(rgbImageHelper.getGrayscale()).execute()).execute();
+		int[][] closingGrayscale = new Erosion(structuringElement, x, y, new Dilation(structuringElement, x, y, binaryGrayscale).execute()).execute();
+		GrayscaleImageHelper openingGrayscaleHelper = new GrayscaleImageHelper(closingGrayscale);
+		int[][] newGrayscale = new int[openingGrayscaleHelper.lineLength()][openingGrayscaleHelper.columnLength()];
+		
+		for (int line = 0; line < openingGrayscaleHelper.lineLength(); line++) {
+			for (int column = 0; column < openingGrayscaleHelper.columnLength(); column++) {
+				newGrayscale[line][column] = Math.abs(binaryGrayscale[line][column] - closingGrayscale[line][column]);
+			}
+		}
+		newGrayscale = new InvertGrayscale(newGrayscale).execute();
+		
+		RGBA[][] fullColorImage = new RgbImageHelper(newGrayscale).setAlphas(rgbImageHelper.getAlphas()).getImage();
+		send(new DataPacket().setHeader(Const.TOP_HAT_OPENING).setData(fullColorImage));
 	}
 	
 	private void topHatOpeningOperation(DataPacket dataPacket) throws IOException {
